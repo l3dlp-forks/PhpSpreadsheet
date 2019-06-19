@@ -2,97 +2,89 @@
 
 namespace PhpOffice\PhpSpreadsheet;
 
-/**
- * PhpSpreadsheet
- *
- * Copyright (c) 2006 - 2016 PhpSpreadsheet
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
- * @category   PHPSpreadsheet
- * @copyright  Copyright (c) 2006 PHPOffice (http://www.github.com/PHPOffice)
- * @license    http://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt    LGPL
- * @version    ##VERSION##, ##DATE##
- */
+use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
+use PhpOffice\PhpSpreadsheet\Style\Style;
+use PhpOffice\PhpSpreadsheet\Worksheet\Iterator;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+
 class Spreadsheet
 {
+    // Allowable values for workbook window visilbity
+    const VISIBILITY_VISIBLE = 'visible';
+    const VISIBILITY_HIDDEN = 'hidden';
+    const VISIBILITY_VERY_HIDDEN = 'veryHidden';
+
+    private static $workbookViewVisibilityValues = [
+        self::VISIBILITY_VISIBLE,
+        self::VISIBILITY_HIDDEN,
+        self::VISIBILITY_VERY_HIDDEN,
+    ];
+
     /**
-     * Unique ID
+     * Unique ID.
      *
      * @var string
      */
     private $uniqueID;
 
     /**
-     * Document properties
+     * Document properties.
      *
      * @var Document\Properties
      */
     private $properties;
 
     /**
-     * Document security
+     * Document security.
      *
      * @var Document\Security
      */
     private $security;
 
     /**
-     * Collection of Worksheet objects
+     * Collection of Worksheet objects.
      *
      * @var Worksheet[]
      */
     private $workSheetCollection = [];
 
     /**
-     * Calculation Engine
+     * Calculation Engine.
      *
      * @var Calculation
      */
     private $calculationEngine;
 
     /**
-     * Active sheet index
+     * Active sheet index.
      *
      * @var int
      */
     private $activeSheetIndex = 0;
 
     /**
-     * Named ranges
+     * Named ranges.
      *
      * @var NamedRange[]
      */
     private $namedRanges = [];
 
     /**
-     * CellXf supervisor
+     * CellXf supervisor.
      *
      * @var Style
      */
     private $cellXfSupervisor;
 
     /**
-     * CellXf collection
+     * CellXf collection.
      *
      * @var Style[]
      */
     private $cellXfCollection = [];
 
     /**
-     * CellStyleXf collection
+     * CellStyleXf collection.
      *
      * @var Style[]
      */
@@ -106,20 +98,21 @@ class Spreadsheet
     private $hasMacros = false;
 
     /**
-     * macrosCode : all macros code (the vbaProject.bin file, this include form, code,  etc.), null if no macro
+     * macrosCode : all macros code as binary data (the vbaProject.bin file, this include form, code,  etc.), null if no macro.
      *
-     * @var binary
+     * @var string
      */
     private $macrosCode;
+
     /**
-     * macrosCertificate : if macros are signed, contains vbaProjectSignature.bin file, null if not signed
+     * macrosCertificate : if macros are signed, contains binary data vbaProjectSignature.bin file, null if not signed.
      *
-     * @var binary
+     * @var string
      */
     private $macrosCertificate;
 
     /**
-     * ribbonXMLData : null if workbook is'nt Excel 2007 or not contain a customized UI
+     * ribbonXMLData : null if workbook is'nt Excel 2007 or not contain a customized UI.
      *
      * @var null|string
      */
@@ -127,11 +120,80 @@ class Spreadsheet
 
     /**
      * ribbonBinObjects : null if workbook is'nt Excel 2007 or not contain embedded objects (picture(s)) for Ribbon Elements
-     * ignored if $ribbonXMLData is null
+     * ignored if $ribbonXMLData is null.
      *
      * @var null|array
      */
     private $ribbonBinObjects;
+
+    /**
+     * List of unparsed loaded data for export to same format with better compatibility.
+     * It has to be minimized when the library start to support currently unparsed data.
+     *
+     * @var array
+     */
+    private $unparsedLoadedData = [];
+
+    /**
+     * Controls visibility of the horizonal scroll bar in the application.
+     *
+     * @var bool
+     */
+    private $showHorizontalScroll = true;
+
+    /**
+     * Controls visibility of the horizonal scroll bar in the application.
+     *
+     * @var bool
+     */
+    private $showVerticalScroll = true;
+
+    /**
+     * Controls visibility of the sheet tabs in the application.
+     *
+     * @var bool
+     */
+    private $showSheetTabs = true;
+
+    /**
+     * Specifies a boolean value that indicates whether the workbook window
+     * is minimized.
+     *
+     * @var bool
+     */
+    private $minimized = false;
+
+    /**
+     * Specifies a boolean value that indicates whether to group dates
+     * when presenting the user with filtering optiomd in the user
+     * interface.
+     *
+     * @var bool
+     */
+    private $autoFilterDateGrouping = true;
+
+    /**
+     * Specifies the index to the first sheet in the book view.
+     *
+     * @var int
+     */
+    private $firstSheetIndex = 0;
+
+    /**
+     * Specifies the visible status of the workbook.
+     *
+     * @var string
+     */
+    private $visibility = self::VISIBILITY_VISIBLE;
+
+    /**
+     * Specifies the ratio between the workbook tabs bar and the horizontal
+     * scroll bar.  TabRatio is assumed to be out of 1000 of the horizontal
+     * window width.
+     *
+     * @var int
+     */
+    private $tabRatio = 600;
 
     /**
      * The workbook has macros ?
@@ -144,30 +206,30 @@ class Spreadsheet
     }
 
     /**
-     * Define if a workbook has macros
+     * Define if a workbook has macros.
      *
      * @param bool $hasMacros true|false
      */
-    public function setHasMacros($hasMacros = false)
+    public function setHasMacros($hasMacros)
     {
         $this->hasMacros = (bool) $hasMacros;
     }
 
     /**
-     * Set the macros code
+     * Set the macros code.
      *
      * @param string $macroCode string|null
      */
-    public function setMacrosCode($macroCode = null)
+    public function setMacrosCode($macroCode)
     {
         $this->macrosCode = $macroCode;
-        $this->setHasMacros(!is_null($macroCode));
+        $this->setHasMacros($macroCode !== null);
     }
 
     /**
-     * Return the macros code
+     * Return the macros code.
      *
-     * @return string|null
+     * @return null|string
      */
     public function getMacrosCode()
     {
@@ -175,11 +237,11 @@ class Spreadsheet
     }
 
     /**
-     * Set the macros certificate
+     * Set the macros certificate.
      *
-     * @param string|null $certificate
+     * @param null|string $certificate
      */
-    public function setMacrosCertificate($certificate = null)
+    public function setMacrosCertificate($certificate)
     {
         $this->macrosCertificate = $certificate;
     }
@@ -191,13 +253,13 @@ class Spreadsheet
      */
     public function hasMacrosCertificate()
     {
-        return !is_null($this->macrosCertificate);
+        return $this->macrosCertificate !== null;
     }
 
     /**
-     * Return the macros certificate
+     * Return the macros certificate.
      *
-     * @return string|null
+     * @return null|string
      */
     public function getMacrosCertificate()
     {
@@ -205,7 +267,7 @@ class Spreadsheet
     }
 
     /**
-     * Remove all macros, certificate from spreadsheet
+     * Remove all macros, certificate from spreadsheet.
      */
     public function discardMacros()
     {
@@ -215,11 +277,14 @@ class Spreadsheet
     }
 
     /**
-     * set ribbon XML data
+     * set ribbon XML data.
+     *
+     * @param null|mixed $target
+     * @param null|mixed $xmlData
      */
-    public function setRibbonXMLData($target = null, $xmlData = null)
+    public function setRibbonXMLData($target, $xmlData)
     {
-        if (!is_null($target) && !is_null($xmlData)) {
+        if ($target !== null && $xmlData !== null) {
             $this->ribbonXMLData = ['target' => $target, 'data' => $xmlData];
         } else {
             $this->ribbonXMLData = null;
@@ -227,9 +292,12 @@ class Spreadsheet
     }
 
     /**
-     * retrieve ribbon XML Data
+     * retrieve ribbon XML Data.
      *
      * return string|null|array
+     *
+     * @param string $what
+     *
      * @return string
      */
     public function getRibbonXMLData($what = 'all') //we need some constants here...
@@ -239,12 +307,14 @@ class Spreadsheet
         switch ($what) {
             case 'all':
                 $returnData = $this->ribbonXMLData;
+
                 break;
             case 'target':
             case 'data':
-                if (is_array($this->ribbonXMLData) && array_key_exists($what, $this->ribbonXMLData)) {
+                if (is_array($this->ribbonXMLData) && isset($this->ribbonXMLData[$what])) {
                     $returnData = $this->ribbonXMLData[$what];
                 }
+
                 break;
         }
 
@@ -252,49 +322,90 @@ class Spreadsheet
     }
 
     /**
-     * store binaries ribbon objects (pictures)
+     * store binaries ribbon objects (pictures).
+     *
+     * @param null|mixed $BinObjectsNames
+     * @param null|mixed $BinObjectsData
      */
-    public function setRibbonBinObjects($BinObjectsNames = null, $BinObjectsData = null)
+    public function setRibbonBinObjects($BinObjectsNames, $BinObjectsData)
     {
-        if (!is_null($BinObjectsNames) && !is_null($BinObjectsData)) {
+        if ($BinObjectsNames !== null && $BinObjectsData !== null) {
             $this->ribbonBinObjects = ['names' => $BinObjectsNames, 'data' => $BinObjectsData];
         } else {
             $this->ribbonBinObjects = null;
         }
     }
+
     /**
-     * return the extension of a filename. Internal use for a array_map callback (php<5.3 don't like lambda function)
+     * List of unparsed loaded data for export to same format with better compatibility.
+     * It has to be minimized when the library start to support currently unparsed data.
+     *
+     * @internal
+     *
+     * @return array
      */
-    private function getExtensionOnly($ThePath)
+    public function getUnparsedLoadedData()
     {
-        return pathinfo($ThePath, PATHINFO_EXTENSION);
+        return $this->unparsedLoadedData;
     }
 
     /**
-     * retrieve Binaries Ribbon Objects
+     * List of unparsed loaded data for export to same format with better compatibility.
+     * It has to be minimized when the library start to support currently unparsed data.
+     *
+     * @internal
+     *
+     * @param array $unparsedLoadedData
      */
-    public function getRibbonBinObjects($What = 'all')
+    public function setUnparsedLoadedData(array $unparsedLoadedData)
+    {
+        $this->unparsedLoadedData = $unparsedLoadedData;
+    }
+
+    /**
+     * return the extension of a filename. Internal use for a array_map callback (php<5.3 don't like lambda function).
+     *
+     * @param mixed $path
+     *
+     * @return string
+     */
+    private function getExtensionOnly($path)
+    {
+        return pathinfo($path, PATHINFO_EXTENSION);
+    }
+
+    /**
+     * retrieve Binaries Ribbon Objects.
+     *
+     * @param string $what
+     *
+     * @return null|array
+     */
+    public function getRibbonBinObjects($what = 'all')
     {
         $ReturnData = null;
-        $What = strtolower($What);
-        switch ($What) {
+        $what = strtolower($what);
+        switch ($what) {
             case 'all':
                 return $this->ribbonBinObjects;
+
                 break;
             case 'names':
             case 'data':
-                if (is_array($this->ribbonBinObjects) && array_key_exists($What, $this->ribbonBinObjects)) {
-                    $ReturnData = $this->ribbonBinObjects[$What];
+                if (is_array($this->ribbonBinObjects) && isset($this->ribbonBinObjects[$what])) {
+                    $ReturnData = $this->ribbonBinObjects[$what];
                 }
+
                 break;
             case 'types':
                 if (is_array($this->ribbonBinObjects) &&
-                    array_key_exists('data', $this->ribbonBinObjects) && is_array($this->ribbonBinObjects['data'])) {
+                    isset($this->ribbonBinObjects['data']) && is_array($this->ribbonBinObjects['data'])) {
                     $tmpTypes = array_keys($this->ribbonBinObjects['data']);
                     $ReturnData = array_unique(array_map([$this, 'getExtensionOnly'], $tmpTypes));
                 } else {
                     $ReturnData = []; // the caller want an array... not null if empty
                 }
+
                 break;
         }
 
@@ -308,7 +419,7 @@ class Spreadsheet
      */
     public function hasRibbon()
     {
-        return !is_null($this->ribbonXMLData);
+        return $this->ribbonXMLData !== null;
     }
 
     /**
@@ -318,13 +429,14 @@ class Spreadsheet
      */
     public function hasRibbonBinObjects()
     {
-        return !is_null($this->ribbonBinObjects);
+        return $this->ribbonBinObjects !== null;
     }
 
     /**
-     * Check if a sheet with a specified code name already exists
+     * Check if a sheet with a specified code name already exists.
      *
-     * @param string $pSheetCodeName  Name of the worksheet to check
+     * @param string $pSheetCodeName Name of the worksheet to check
+     *
      * @return bool
      */
     public function sheetCodeNameExists($pSheetCodeName)
@@ -336,9 +448,10 @@ class Spreadsheet
      * Get sheet by code name. Warning : sheet don't have always a code name !
      *
      * @param string $pName Sheet name
+     *
      * @return Worksheet
      */
-    public function getSheetByCodeName($pName = '')
+    public function getSheetByCodeName($pName)
     {
         $worksheetCount = count($this->workSheetCollection);
         for ($i = 0; $i < $worksheetCount; ++$i) {
@@ -351,11 +464,11 @@ class Spreadsheet
     }
 
     /**
-     * Create a new PhpSpreadsheet with one Worksheet
+     * Create a new PhpSpreadsheet with one Worksheet.
      */
     public function __construct()
     {
-        $this->uniqueID = uniqid();
+        $this->uniqueID = uniqid('', true);
         $this->calculationEngine = new Calculation($this);
 
         // Initialise worksheet collection and add one worksheet
@@ -382,7 +495,7 @@ class Spreadsheet
     }
 
     /**
-     * Code to execute when this worksheet is unset()
+     * Code to execute when this worksheet is unset().
      */
     public function __destruct()
     {
@@ -392,7 +505,7 @@ class Spreadsheet
 
     /**
      * Disconnect all worksheets from this PhpSpreadsheet workbook object,
-     *    typically so that the PhpSpreadsheet object can be unset
+     * typically so that the PhpSpreadsheet object can be unset.
      */
     public function disconnectWorksheets()
     {
@@ -406,17 +519,17 @@ class Spreadsheet
     }
 
     /**
-     * Return the calculation engine for this worksheet
+     * Return the calculation engine for this worksheet.
      *
      * @return Calculation
      */
     public function getCalculationEngine()
     {
         return $this->calculationEngine;
-    }    //    function getCellCacheController()
+    }
 
     /**
-     * Get properties
+     * Get properties.
      *
      * @return Document\Properties
      */
@@ -426,9 +539,9 @@ class Spreadsheet
     }
 
     /**
-     * Set properties
+     * Set properties.
      *
-     * @param Document\Properties    $pValue
+     * @param Document\Properties $pValue
      */
     public function setProperties(Document\Properties $pValue)
     {
@@ -436,7 +549,7 @@ class Spreadsheet
     }
 
     /**
-     * Get security
+     * Get security.
      *
      * @return Document\Security
      */
@@ -446,9 +559,9 @@ class Spreadsheet
     }
 
     /**
-     * Set security
+     * Set security.
      *
-     * @param Document\Security    $pValue
+     * @param Document\Security $pValue
      */
     public function setSecurity(Document\Security $pValue)
     {
@@ -456,9 +569,10 @@ class Spreadsheet
     }
 
     /**
-     * Get active sheet
+     * Get active sheet.
      *
      * @throws Exception
+     *
      * @return Worksheet
      */
     public function getActiveSheet()
@@ -467,24 +581,27 @@ class Spreadsheet
     }
 
     /**
-     * Create sheet and add it to this workbook
+     * Create sheet and add it to this workbook.
      *
-     * @param  int|null $iSheetIndex Index where sheet should go (0,1,..., or null for last)
+     * @param null|int $sheetIndex Index where sheet should go (0,1,..., or null for last)
+     *
      * @throws Exception
+     *
      * @return Worksheet
      */
-    public function createSheet($iSheetIndex = null)
+    public function createSheet($sheetIndex = null)
     {
         $newSheet = new Worksheet($this);
-        $this->addSheet($newSheet, $iSheetIndex);
+        $this->addSheet($newSheet, $sheetIndex);
 
         return $newSheet;
     }
 
     /**
-     * Check if a sheet with a specified name already exists
+     * Check if a sheet with a specified name already exists.
      *
-     * @param  string $pSheetName  Name of the worksheet to check
+     * @param string $pSheetName Name of the worksheet to check
+     *
      * @return bool
      */
     public function sheetNameExists($pSheetName)
@@ -493,11 +610,13 @@ class Spreadsheet
     }
 
     /**
-     * Add sheet
+     * Add sheet.
      *
-     * @param  Worksheet $pSheet
-     * @param  int|null $iSheetIndex Index where sheet should go (0,1,..., or null for last)
+     * @param Worksheet $pSheet
+     * @param null|int $iSheetIndex Index where sheet should go (0,1,..., or null for last)
+     *
      * @throws Exception
+     *
      * @return Worksheet
      */
     public function addSheet(Worksheet $pSheet, $iSheetIndex = null)
@@ -536,21 +655,22 @@ class Spreadsheet
     }
 
     /**
-     * Remove sheet by index
+     * Remove sheet by index.
      *
-     * @param  int $pIndex Active sheet index
+     * @param int $pIndex Active sheet index
+     *
      * @throws Exception
      */
-    public function removeSheetByIndex($pIndex = 0)
+    public function removeSheetByIndex($pIndex)
     {
         $numSheets = count($this->workSheetCollection);
         if ($pIndex > $numSheets - 1) {
             throw new Exception(
                 "You tried to remove a sheet by the out of bounds index: {$pIndex}. The actual number of sheets is {$numSheets}."
             );
-        } else {
-            array_splice($this->workSheetCollection, $pIndex, 1);
         }
+        array_splice($this->workSheetCollection, $pIndex, 1);
+
         // Adjust active sheet index if necessary
         if (($this->activeSheetIndex >= $pIndex) &&
             ($pIndex > count($this->workSheetCollection) - 1)) {
@@ -559,16 +679,19 @@ class Spreadsheet
     }
 
     /**
-     * Get sheet by index
+     * Get sheet by index.
      *
-     * @param  int $pIndex Sheet index
+     * @param int $pIndex Sheet index
+     *
      * @throws Exception
+     *
      * @return Worksheet
      */
-    public function getSheet($pIndex = 0)
+    public function getSheet($pIndex)
     {
         if (!isset($this->workSheetCollection[$pIndex])) {
             $numSheets = $this->getSheetCount();
+
             throw new Exception(
                 "Your requested sheet index: {$pIndex} is out of bounds. The actual number of sheets is {$numSheets}."
             );
@@ -578,7 +701,7 @@ class Spreadsheet
     }
 
     /**
-     * Get all sheets
+     * Get all sheets.
      *
      * @return Worksheet[]
      */
@@ -588,12 +711,13 @@ class Spreadsheet
     }
 
     /**
-     * Get sheet by name
+     * Get sheet by name.
      *
-     * @param  string $pName Sheet name
-     * @return Worksheet
+     * @param string $pName Sheet name
+     *
+     * @return null|Worksheet
      */
-    public function getSheetByName($pName = '')
+    public function getSheetByName($pName)
     {
         $worksheetCount = count($this->workSheetCollection);
         for ($i = 0; $i < $worksheetCount; ++$i) {
@@ -606,10 +730,12 @@ class Spreadsheet
     }
 
     /**
-     * Get index for sheet
+     * Get index for sheet.
      *
-     * @param  Worksheet $pSheet
+     * @param Worksheet $pSheet
+     *
      * @throws Exception
+     *
      * @return int index
      */
     public function getIndex(Worksheet $pSheet)
@@ -626,9 +752,11 @@ class Spreadsheet
     /**
      * Set index for sheet by sheet name.
      *
-     * @param  string $sheetName Sheet name to modify index for
-     * @param  int $newIndex New index for the sheet
+     * @param string $sheetName Sheet name to modify index for
+     * @param int $newIndex New index for the sheet
+     *
      * @throws Exception
+     *
      * @return int New sheet index
      */
     public function setIndexByName($sheetName, $newIndex)
@@ -650,7 +778,7 @@ class Spreadsheet
     }
 
     /**
-     * Get sheet count
+     * Get sheet count.
      *
      * @return int
      */
@@ -660,7 +788,7 @@ class Spreadsheet
     }
 
     /**
-     * Get active sheet index
+     * Get active sheet index.
      *
      * @return int Active sheet index
      */
@@ -670,13 +798,15 @@ class Spreadsheet
     }
 
     /**
-     * Set active sheet index
+     * Set active sheet index.
      *
-     * @param  int $pIndex Active sheet index
+     * @param int $pIndex Active sheet index
+     *
      * @throws Exception
+     *
      * @return Worksheet
      */
-    public function setActiveSheetIndex($pIndex = 0)
+    public function setActiveSheetIndex($pIndex)
     {
         $numSheets = count($this->workSheetCollection);
 
@@ -684,21 +814,22 @@ class Spreadsheet
             throw new Exception(
                 "You tried to set a sheet active by the out of bounds index: {$pIndex}. The actual number of sheets is {$numSheets}."
             );
-        } else {
-            $this->activeSheetIndex = $pIndex;
         }
+        $this->activeSheetIndex = $pIndex;
 
         return $this->getActiveSheet();
     }
 
     /**
-     * Set active sheet index by name
+     * Set active sheet index by name.
      *
-     * @param  string $pValue Sheet title
+     * @param string $pValue Sheet title
+     *
      * @throws Exception
+     *
      * @return Worksheet
      */
-    public function setActiveSheetIndexByName($pValue = '')
+    public function setActiveSheetIndexByName($pValue)
     {
         if (($worksheet = $this->getSheetByName($pValue)) instanceof Worksheet) {
             $this->setActiveSheetIndex($this->getIndex($worksheet));
@@ -710,7 +841,7 @@ class Spreadsheet
     }
 
     /**
-     * Get sheet names
+     * Get sheet names.
      *
      * @return string[]
      */
@@ -726,11 +857,13 @@ class Spreadsheet
     }
 
     /**
-     * Add external sheet
+     * Add external sheet.
      *
-     * @param  Worksheet $pSheet External sheet to add
-     * @param  int|null $iSheetIndex Index where sheet should go (0,1,..., or null for last)
+     * @param Worksheet $pSheet External sheet to add
+     * @param null|int $iSheetIndex Index where sheet should go (0,1,..., or null for last)
+     *
      * @throws Exception
+     *
      * @return Worksheet
      */
     public function addExternalSheet(Worksheet $pSheet, $iSheetIndex = null)
@@ -751,8 +884,8 @@ class Spreadsheet
         $pSheet->rebindParent($this);
 
         // update the cellXfs
-        foreach ($pSheet->getCellCollection(false) as $cellID) {
-            $cell = $pSheet->getCell($cellID);
+        foreach ($pSheet->getCoordinates(false) as $coordinate) {
+            $cell = $pSheet->getCell($coordinate);
             $cell->setXfIndex($cell->getXfIndex() + $countCellXfs);
         }
 
@@ -760,7 +893,7 @@ class Spreadsheet
     }
 
     /**
-     * Get named ranges
+     * Get named ranges.
      *
      * @return NamedRange[]
      */
@@ -770,9 +903,10 @@ class Spreadsheet
     }
 
     /**
-     * Add named range
+     * Add named range.
      *
-     * @param  NamedRange $namedRange
+     * @param NamedRange $namedRange
+     *
      * @return bool
      */
     public function addNamedRange(NamedRange $namedRange)
@@ -789,11 +923,12 @@ class Spreadsheet
     }
 
     /**
-     * Get named range
+     * Get named range.
      *
-     * @param  string $namedRange
-     * @param  Worksheet|null $pSheet Scope. Use null for global scope
-     * @return NamedRange|null
+     * @param string $namedRange
+     * @param null|Worksheet $pSheet Scope. Use null for global scope
+     *
+     * @return null|NamedRange
      */
     public function getNamedRange($namedRange, Worksheet $pSheet = null)
     {
@@ -815,10 +950,11 @@ class Spreadsheet
     }
 
     /**
-     * Remove named range
+     * Remove named range.
      *
-     * @param  string  $namedRange
-     * @param  Worksheet|null  $pSheet  Scope: use null for global scope.
+     * @param string $namedRange
+     * @param null|Worksheet $pSheet scope: use null for global scope
+     *
      * @return Spreadsheet
      */
     public function removeNamedRange($namedRange, Worksheet $pSheet = null)
@@ -837,17 +973,17 @@ class Spreadsheet
     }
 
     /**
-     * Get worksheet iterator
+     * Get worksheet iterator.
      *
-     * @return Worksheet\Iterator
+     * @return Iterator
      */
     public function getWorksheetIterator()
     {
-        return new Worksheet\Iterator($this);
+        return new Iterator($this);
     }
 
     /**
-     * Copy workbook (!= clone!)
+     * Copy workbook (!= clone!).
      *
      * @return Spreadsheet
      */
@@ -877,7 +1013,7 @@ class Spreadsheet
     }
 
     /**
-     * Get the workbook collection of cellXfs
+     * Get the workbook collection of cellXfs.
      *
      * @return Style[]
      */
@@ -887,23 +1023,25 @@ class Spreadsheet
     }
 
     /**
-     * Get cellXf by index
+     * Get cellXf by index.
      *
-     * @param  int $pIndex
+     * @param int $pIndex
+     *
      * @return Style
      */
-    public function getCellXfByIndex($pIndex = 0)
+    public function getCellXfByIndex($pIndex)
     {
         return $this->cellXfCollection[$pIndex];
     }
 
     /**
-     * Get cellXf by hash code
+     * Get cellXf by hash code.
      *
-     * @param  string $pValue
-     * @return Style|false
+     * @param string $pValue
+     *
+     * @return false|Style
      */
-    public function getCellXfByHashCode($pValue = '')
+    public function getCellXfByHashCode($pValue)
     {
         foreach ($this->cellXfCollection as $cellXf) {
             if ($cellXf->getHashCode() == $pValue) {
@@ -915,20 +1053,22 @@ class Spreadsheet
     }
 
     /**
-     * Check if style exists in style collection
+     * Check if style exists in style collection.
      *
-     * @param  Style $pCellStyle
+     * @param Style $pCellStyle
+     *
      * @return bool
      */
-    public function cellXfExists($pCellStyle = null)
+    public function cellXfExists($pCellStyle)
     {
         return in_array($pCellStyle, $this->cellXfCollection, true);
     }
 
     /**
-     * Get default style
+     * Get default style.
      *
      * @throws Exception
+     *
      * @return Style
      */
     public function getDefaultStyle()
@@ -936,11 +1076,12 @@ class Spreadsheet
         if (isset($this->cellXfCollection[0])) {
             return $this->cellXfCollection[0];
         }
+
         throw new Exception('No default style found for this workbook');
     }
 
     /**
-     * Add a cellXf to the workbook
+     * Add a cellXf to the workbook.
      *
      * @param Style $style
      */
@@ -954,35 +1095,36 @@ class Spreadsheet
      * Remove cellXf by index. It is ensured that all cells get their xf index updated.
      *
      * @param int $pIndex Index to cellXf
+     *
      * @throws Exception
      */
-    public function removeCellXfByIndex($pIndex = 0)
+    public function removeCellXfByIndex($pIndex)
     {
         if ($pIndex > count($this->cellXfCollection) - 1) {
             throw new Exception('CellXf index is out of bounds.');
-        } else {
-            // first remove the cellXf
-            array_splice($this->cellXfCollection, $pIndex, 1);
+        }
 
-            // then update cellXf indexes for cells
-            foreach ($this->workSheetCollection as $worksheet) {
-                foreach ($worksheet->getCellCollection(false) as $cellID) {
-                    $cell = $worksheet->getCell($cellID);
-                    $xfIndex = $cell->getXfIndex();
-                    if ($xfIndex > $pIndex) {
-                        // decrease xf index by 1
-                        $cell->setXfIndex($xfIndex - 1);
-                    } elseif ($xfIndex == $pIndex) {
-                        // set to default xf index 0
-                        $cell->setXfIndex(0);
-                    }
+        // first remove the cellXf
+        array_splice($this->cellXfCollection, $pIndex, 1);
+
+        // then update cellXf indexes for cells
+        foreach ($this->workSheetCollection as $worksheet) {
+            foreach ($worksheet->getCoordinates(false) as $coordinate) {
+                $cell = $worksheet->getCell($coordinate);
+                $xfIndex = $cell->getXfIndex();
+                if ($xfIndex > $pIndex) {
+                    // decrease xf index by 1
+                    $cell->setXfIndex($xfIndex - 1);
+                } elseif ($xfIndex == $pIndex) {
+                    // set to default xf index 0
+                    $cell->setXfIndex(0);
                 }
             }
         }
     }
 
     /**
-     * Get the cellXf supervisor
+     * Get the cellXf supervisor.
      *
      * @return Style
      */
@@ -992,7 +1134,7 @@ class Spreadsheet
     }
 
     /**
-     * Get the workbook collection of cellStyleXfs
+     * Get the workbook collection of cellStyleXfs.
      *
      * @return Style[]
      */
@@ -1002,23 +1144,25 @@ class Spreadsheet
     }
 
     /**
-     * Get cellStyleXf by index
+     * Get cellStyleXf by index.
      *
      * @param int $pIndex Index to cellXf
+     *
      * @return Style
      */
-    public function getCellStyleXfByIndex($pIndex = 0)
+    public function getCellStyleXfByIndex($pIndex)
     {
         return $this->cellStyleXfCollection[$pIndex];
     }
 
     /**
-     * Get cellStyleXf by hash code
+     * Get cellStyleXf by hash code.
      *
-     * @param  string $pValue
-     * @return Style|false
+     * @param string $pValue
+     *
+     * @return false|Style
      */
-    public function getCellStyleXfByHashCode($pValue = '')
+    public function getCellStyleXfByHashCode($pValue)
     {
         foreach ($this->cellStyleXfCollection as $cellStyleXf) {
             if ($cellStyleXf->getHashCode() == $pValue) {
@@ -1030,7 +1174,7 @@ class Spreadsheet
     }
 
     /**
-     * Add a cellStyleXf to the workbook
+     * Add a cellStyleXf to the workbook.
      *
      * @param Style $pStyle
      */
@@ -1041,23 +1185,23 @@ class Spreadsheet
     }
 
     /**
-     * Remove cellStyleXf by index
+     * Remove cellStyleXf by index.
      *
      * @param int $pIndex Index to cellXf
+     *
      * @throws Exception
      */
-    public function removeCellStyleXfByIndex($pIndex = 0)
+    public function removeCellStyleXfByIndex($pIndex)
     {
         if ($pIndex > count($this->cellStyleXfCollection) - 1) {
             throw new Exception('CellStyleXf index is out of bounds.');
-        } else {
-            array_splice($this->cellStyleXfCollection, $pIndex, 1);
         }
+        array_splice($this->cellStyleXfCollection, $pIndex, 1);
     }
 
     /**
      * Eliminate all unneeded cellXf and afterwards update the xfIndex for all cells
-     * and columns in the workbook
+     * and columns in the workbook.
      */
     public function garbageCollect()
     {
@@ -1069,8 +1213,8 @@ class Spreadsheet
 
         foreach ($this->getWorksheetIterator() as $sheet) {
             // from cells
-            foreach ($sheet->getCellCollection(false) as $cellID) {
-                $cell = $sheet->getCell($cellID);
+            foreach ($sheet->getCoordinates(false) as $coordinate) {
+                $cell = $sheet->getCell($coordinate);
                 ++$countReferencesCellXf[$cell->getXfIndex()];
             }
 
@@ -1113,8 +1257,8 @@ class Spreadsheet
         // update the xfIndex for all cells, row dimensions, column dimensions
         foreach ($this->getWorksheetIterator() as $sheet) {
             // for all cells
-            foreach ($sheet->getCellCollection(false) as $cellID) {
-                $cell = $sheet->getCell($cellID);
+            foreach ($sheet->getCoordinates(false) as $coordinate) {
+                $cell = $sheet->getCell($coordinate);
                 $cell->setXfIndex($map[$cell->getXfIndex()]);
             }
 
@@ -1136,12 +1280,211 @@ class Spreadsheet
     }
 
     /**
-     * Return the unique ID value assigned to this spreadsheet workbook
+     * Return the unique ID value assigned to this spreadsheet workbook.
      *
      * @return string
      */
     public function getID()
     {
         return $this->uniqueID;
+    }
+
+    /**
+     * Get the visibility of the horizonal scroll bar in the application.
+     *
+     * @return bool True if horizonal scroll bar is visible
+     */
+    public function getShowHorizontalScroll()
+    {
+        return $this->showHorizontalScroll;
+    }
+
+    /**
+     * Set the visibility of the horizonal scroll bar in the application.
+     *
+     * @param bool $showHorizontalScroll True if horizonal scroll bar is visible
+     */
+    public function setShowHorizontalScroll($showHorizontalScroll)
+    {
+        $this->showHorizontalScroll = (bool) $showHorizontalScroll;
+    }
+
+    /**
+     * Get the visibility of the vertical scroll bar in the application.
+     *
+     * @return bool True if vertical scroll bar is visible
+     */
+    public function getShowVerticalScroll()
+    {
+        return $this->showVerticalScroll;
+    }
+
+    /**
+     * Set the visibility of the vertical scroll bar in the application.
+     *
+     * @param bool $showVerticalScroll True if vertical scroll bar is visible
+     */
+    public function setShowVerticalScroll($showVerticalScroll)
+    {
+        $this->showVerticalScroll = (bool) $showVerticalScroll;
+    }
+
+    /**
+     * Get the visibility of the sheet tabs in the application.
+     *
+     * @return bool True if the sheet tabs are visible
+     */
+    public function getShowSheetTabs()
+    {
+        return $this->showSheetTabs;
+    }
+
+    /**
+     * Set the visibility of the sheet tabs  in the application.
+     *
+     * @param bool $showSheetTabs True if sheet tabs are visible
+     */
+    public function setShowSheetTabs($showSheetTabs)
+    {
+        $this->showSheetTabs = (bool) $showSheetTabs;
+    }
+
+    /**
+     * Return whether the workbook window is minimized.
+     *
+     * @return bool true if workbook window is minimized
+     */
+    public function getMinimized()
+    {
+        return $this->minimized;
+    }
+
+    /**
+     * Set whether the workbook window is minimized.
+     *
+     * @param bool $minimized true if workbook window is minimized
+     */
+    public function setMinimized($minimized)
+    {
+        $this->minimized = (bool) $minimized;
+    }
+
+    /**
+     * Return whether to group dates when presenting the user with
+     * filtering optiomd in the user interface.
+     *
+     * @return bool true if workbook window is minimized
+     */
+    public function getAutoFilterDateGrouping()
+    {
+        return $this->autoFilterDateGrouping;
+    }
+
+    /**
+     * Set whether to group dates when presenting the user with
+     * filtering optiomd in the user interface.
+     *
+     * @param bool $autoFilterDateGrouping true if workbook window is minimized
+     */
+    public function setAutoFilterDateGrouping($autoFilterDateGrouping)
+    {
+        $this->autoFilterDateGrouping = (bool) $autoFilterDateGrouping;
+    }
+
+    /**
+     * Return the first sheet in the book view.
+     *
+     * @return int First sheet in book view
+     */
+    public function getFirstSheetIndex()
+    {
+        return $this->firstSheetIndex;
+    }
+
+    /**
+     * Set the first sheet in the book view.
+     *
+     * @param int $firstSheetIndex First sheet in book view
+     *
+     * @throws Exception  if the given value is invalid
+     */
+    public function setFirstSheetIndex($firstSheetIndex)
+    {
+        if ($firstSheetIndex >= 0) {
+            $this->firstSheetIndex = (int) $firstSheetIndex;
+        } else {
+            throw new Exception('First sheet index must be a positive integer.');
+        }
+    }
+
+    /**
+     * Return the visibility status of the workbook.
+     *
+     * This may be one of the following three values:
+     * - visibile
+     *
+     * @return string Visible status
+     */
+    public function getVisibility()
+    {
+        return $this->visibility;
+    }
+
+    /**
+     * Set the visibility status of the workbook.
+     *
+     * Valid values are:
+     *  - 'visible' (self::VISIBILITY_VISIBLE):
+     *       Workbook window is visible
+     *  - 'hidden' (self::VISIBILITY_HIDDEN):
+     *       Workbook window is hidden, but can be shown by the user
+     *       via the user interface
+     *  - 'veryHidden' (self::VISIBILITY_VERY_HIDDEN):
+     *       Workbook window is hidden and cannot be shown in the
+     *       user interface.
+     *
+     * @param string $visibility visibility status of the workbook
+     *
+     * @throws Exception  if the given value is invalid
+     */
+    public function setVisibility($visibility)
+    {
+        if ($visibility === null) {
+            $visibility = self::VISIBILITY_VISIBLE;
+        }
+
+        if (in_array($visibility, self::$workbookViewVisibilityValues)) {
+            $this->visibility = $visibility;
+        } else {
+            throw new Exception('Invalid visibility value.');
+        }
+    }
+
+    /**
+     * Get the ratio between the workbook tabs bar and the horizontal scroll bar.
+     * TabRatio is assumed to be out of 1000 of the horizontal window width.
+     *
+     * @return int Ratio between the workbook tabs bar and the horizontal scroll bar
+     */
+    public function getTabRatio()
+    {
+        return $this->tabRatio;
+    }
+
+    /**
+     * Set the ratio between the workbook tabs bar and the horizontal scroll bar
+     * TabRatio is assumed to be out of 1000 of the horizontal window width.
+     *
+     * @param int $tabRatio Ratio between the tabs bar and the horizontal scroll bar
+     *
+     * @throws Exception  if the given value is invalid
+     */
+    public function setTabRatio($tabRatio)
+    {
+        if ($tabRatio >= 0 || $tabRatio <= 1000) {
+            $this->tabRatio = (int) $tabRatio;
+        } else {
+            throw new Exception('Tab ratio must be between 0 and 1000.');
+        }
     }
 }

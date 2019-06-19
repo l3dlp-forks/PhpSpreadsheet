@@ -1,8 +1,6 @@
-/build/PHPExcel.phar
 /tests/codeCoverage
 /analysis
 /vendor/
-/composer.lock
 /phpunit.xml
 
 ## IDE support

@@ -4,8 +4,9 @@ namespace PhpOffice\PhpSpreadsheetTests\Chart;
 
 use PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues;
 use PhpOffice\PhpSpreadsheet\Exception;
+use PHPUnit\Framework\TestCase;
 
-class DataSeriesValuesTest extends \PHPUnit_Framework_TestCase
+class DataSeriesValuesTest extends TestCase
 {
     public function testSetDataType()
     {
@@ -18,7 +19,7 @@ class DataSeriesValuesTest extends \PHPUnit_Framework_TestCase
 
         foreach ($dataTypeValues as $dataTypeValue) {
             $result = $testInstance->setDataType($dataTypeValue);
-            $this->assertTrue($result instanceof DataSeriesValues);
+            self::assertInstanceOf(DataSeriesValues::class, $result);
         }
     }
 
@@ -29,7 +30,7 @@ class DataSeriesValuesTest extends \PHPUnit_Framework_TestCase
         try {
             $testInstance->setDataType('BOOLEAN');
         } catch (Exception $e) {
-            $this->assertEquals($e->getMessage(), 'Invalid datatype for chart data series values');
+            self::assertEquals($e->getMessage(), 'Invalid datatype for chart data series values');
 
             return;
         }
@@ -44,6 +45,44 @@ class DataSeriesValuesTest extends \PHPUnit_Framework_TestCase
         $testInstance->setDataType($dataTypeValue);
 
         $result = $testInstance->getDataType();
-        $this->assertEquals($dataTypeValue, $result);
+        self::assertEquals($dataTypeValue, $result);
+    }
+
+    public function testGetLineWidth()
+    {
+        $testInstance = new DataSeriesValues();
+        self::assertEquals(12700, $testInstance->getLineWidth(), 'should have default');
+
+        $testInstance->setLineWidth(40000);
+        self::assertEquals(40000, $testInstance->getLineWidth());
+
+        $testInstance->setLineWidth(1);
+        self::assertEquals(12700, $testInstance->getLineWidth(), 'should enforce minimum width');
+    }
+
+    public function testFillColorCorrectInput()
+    {
+        $testInstance = new DataSeriesValues();
+
+        self::assertEquals($testInstance, $testInstance->setFillColor('00abb8'));
+        self::assertEquals($testInstance, $testInstance->setFillColor(['00abb8', 'b8292f']));
+    }
+
+    public function testFillColorInvalidInput()
+    {
+        $testInstance = new DataSeriesValues();
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid hex color for chart series');
+
+        $testInstance->setFillColor('WRONG COLOR');
+    }
+
+    public function testFillColorInvalidInputInArray()
+    {
+        $testInstance = new DataSeriesValues();
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid hex color for chart series (color: "WRONG COLOR")');
+
+        $testInstance->setFillColor(['b8292f', 'WRONG COLOR']);
     }
 }

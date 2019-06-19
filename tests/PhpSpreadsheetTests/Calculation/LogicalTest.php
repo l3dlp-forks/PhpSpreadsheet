@@ -4,8 +4,9 @@ namespace PhpOffice\PhpSpreadsheetTests\Calculation;
 
 use PhpOffice\PhpSpreadsheet\Calculation\Functions;
 use PhpOffice\PhpSpreadsheet\Calculation\Logical;
+use PHPUnit\Framework\TestCase;
 
-class LogicalTest extends \PHPUnit_Framework_TestCase
+class LogicalTest extends TestCase
 {
     public function setUp()
     {
@@ -15,24 +16,24 @@ class LogicalTest extends \PHPUnit_Framework_TestCase
     public function testTRUE()
     {
         $result = Logical::TRUE();
-        $this->assertTrue($result);
+        self::assertTrue($result);
     }
 
     public function testFALSE()
     {
         $result = Logical::FALSE();
-        $this->assertFalse($result);
+        self::assertFalse($result);
     }
 
     /**
      * @dataProvider providerAND
+     *
+     * @param mixed $expectedResult
      */
-    public function testAND()
+    public function testAND($expectedResult, ...$args)
     {
-        $args = func_get_args();
-        $expectedResult = array_pop($args);
-        $result = call_user_func_array([Logical::class, 'logicalAnd'], $args);
-        $this->assertEquals($expectedResult, $result);
+        $result = Logical::logicalAnd(...$args);
+        self::assertEquals($expectedResult, $result);
     }
 
     public function providerAND()
@@ -42,13 +43,13 @@ class LogicalTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider providerOR
+     *
+     * @param mixed $expectedResult
      */
-    public function testOR()
+    public function testOR($expectedResult, ...$args)
     {
-        $args = func_get_args();
-        $expectedResult = array_pop($args);
-        $result = call_user_func_array([Logical::class, 'logicalOr'], $args);
-        $this->assertEquals($expectedResult, $result);
+        $result = Logical::logicalOr(...$args);
+        self::assertEquals($expectedResult, $result);
     }
 
     public function providerOR()
@@ -57,14 +58,30 @@ class LogicalTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @dataProvider providerNOT
+     * @dataProvider providerXOR
+     *
+     * @param mixed $expectedResult
      */
-    public function testNOT()
+    public function testXOR($expectedResult, ...$args)
     {
-        $args = func_get_args();
-        $expectedResult = array_pop($args);
-        $result = call_user_func_array([Logical::class, 'NOT'], $args);
-        $this->assertEquals($expectedResult, $result);
+        $result = Logical::logicalXor(...$args);
+        self::assertEquals($expectedResult, $result);
+    }
+
+    public function providerXOR()
+    {
+        return require 'data/Calculation/Logical/XOR.php';
+    }
+
+    /**
+     * @dataProvider providerNOT
+     *
+     * @param mixed $expectedResult
+     */
+    public function testNOT($expectedResult, ...$args)
+    {
+        $result = Logical::NOT(...$args);
+        self::assertEquals($expectedResult, $result);
     }
 
     public function providerNOT()
@@ -74,13 +91,13 @@ class LogicalTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider providerIF
+     *
+     * @param mixed $expectedResult
      */
-    public function testIF()
+    public function testIF($expectedResult, ...$args)
     {
-        $args = func_get_args();
-        $expectedResult = array_pop($args);
-        $result = call_user_func_array([Logical::class, 'statementIf'], $args);
-        $this->assertEquals($expectedResult, $result);
+        $result = Logical::statementIf(...$args);
+        self::assertEquals($expectedResult, $result);
     }
 
     public function providerIF()
@@ -90,17 +107,33 @@ class LogicalTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider providerIFERROR
+     *
+     * @param mixed $expectedResult
      */
-    public function testIFERROR()
+    public function testIFERROR($expectedResult, ...$args)
     {
-        $args = func_get_args();
-        $expectedResult = array_pop($args);
-        $result = call_user_func_array([Logical::class, 'IFERROR'], $args);
-        $this->assertEquals($expectedResult, $result);
+        $result = Logical::IFERROR(...$args);
+        self::assertEquals($expectedResult, $result);
     }
 
     public function providerIFERROR()
     {
         return require 'data/Calculation/Logical/IFERROR.php';
+    }
+
+    /**
+     * @dataProvider providerSwitch
+     *
+     * @param mixed $expectedResult
+     */
+    public function testSWITCH($expectedResult, ...$args)
+    {
+        $result = Logical::statementSwitch(...$args);
+        self::assertEquals($expectedResult, $result);
+    }
+
+    public function providerSwitch()
+    {
+        return require 'data/Calculation/Logical/SWITCH.php';
     }
 }
